@@ -34,11 +34,13 @@
 </style>
 </head>
 <body>
+
 <nav>
   <a href="#home">Home</a>
   <a href="#gallery">Gallery</a>
   <a href="#upload">Upload</a>
 </nav>
+
 <header id="home">
   <div class="hero">
     <h1>KHOA</h1>
@@ -46,16 +48,18 @@
   </div>
 </header>
 
+<!-- UPLOAD CHỈ MỞ BẰNG MẬT KHẨU -->
 <section id="upload">
   <h2>Upload Ảnh Deep Sky</h2>
   <div id="upload-section">
     <h3>Nhập mật khẩu để mở chức năng upload</h3>
     <input type="password" id="pass-input" placeholder="Mật khẩu bí mật của Khoa..." autocomplete="off">
     <button id="unlock-btn" class="upload-btn">Mở khóa upload</button>
+
     <div id="upload-area" style="display:none;margin-top:50px;">
       <h3 style="color:#00ff88;font-size:2.2rem;">Đã mở khóa thành công!</h3>
       <p style="margin:20px 0;color:#aaa;">Giờ up ảnh thoải mái đi lão gia</p>
-      <label class="upload-btn">Chọn ảnh từ máy (dưới 10MB)</label>
+      <label class="upload-btn">Chọn ảnh từ máy (dưới 32MB)</label>
       <input type="file" id="file-input" accept="image/*">
       <div id="loading">Đang up ảnh... đừng tắt tab nha</div>
       <div id="upload-status"></div>
@@ -63,19 +67,22 @@
   </div>
 </section>
 
+<!-- GALLERY -->
 <section id="gallery">
   <h2>My Deep Sky Gallery</h2>
-  <div class="gallery-grid" id="gallery-grid"></div>
+  <div class="gallery-grid" id="gallery-grid">
+    <!-- Ảnh sẽ tự động hiện ở đây -->
+  </div>
 </section>
 
-<footer>© 2025 Khoa • Portfolio + Gallery riêng • Chỉ chủ nhân được up ảnh</footer>
+<footer>© 2025 Khoa • Gallery dùng FreeImage.host – Ổn định nhất 2025</footer>
 
 <script>
-// MẬT KHẨU CHỈ MÀY BIẾT – ĐỔI DÒNG NÀY THÀNH GÌ MÀY THÍCH
-const MAT_KHAU_DUNG = "Htrang011006";   // ← ĐỔI ĐI NHA!!!
+// ================== MẬT KHẨU – ĐỔI DÒNG NÀY THÀNH GÌ MÀY THÍCH ==================
+const MAT_KHAU_DUNG = "hatrang123";   // ← ĐỔI ĐI NHA!!!
 
-// KEY MỚI 100% HOẠT ĐỘNG – TAO TẠO RIÊNG CHO MÀY, KHÔNG AI DÙNG ĐƯỢC NỮA
-const IMGBB_API_KEY = "6d207e02198a847aa98d0a2a901485a5"; // HOẠT ĐỘNG 100% TẠI VIỆT NAM 2025
+// FREEIMAGE.HOST API – KEY PUBLIC ỔN ĐỊNH NHẤT 2025 (KHÔNG CẦN ĐĂNG KÝ)
+const FREEIMAGE_KEY = "6d207e02198a847aa98d0a2a901485a5";
 
 const unlockBtn = document.getElementById('unlock-btn');
 const passInput = document.getElementById('pass-input');
@@ -86,6 +93,7 @@ const status = document.getElementById('upload-status');
 const loading = document.getElementById('loading');
 const gallery = document.getElementById('gallery-grid');
 
+// Mở khóa
 unlockBtn.onclick = () => {
   if (passInput.value === MAT_KHAU_DUNG) {
     uploadArea.style.display = "block";
@@ -102,46 +110,54 @@ uploadBtn.onclick = () => fileInput.click();
 fileInput.onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 10 * 1024 * 1024) {
-    status.innerHTML = "Ảnh to quá 10MB! Chọn ảnh khác đi!";
+  if (file.size > 32 * 1024 * 1024) {
+    status.innerHTML = "Ảnh to quá 32MB! Chọn ảnh khác đi!";
     status.style.color = "#ff3366";
     return;
   }
+
   loading.style.display = "block";
   status.textContent = "";
+
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('source', file);
+  formData.append('key', FREEIMAGE_KEY);
+
   try {
-    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+    const res = await fetch('https://freeimage.host/api/1/upload', {
       method: 'POST',
       body: formData
     });
     const data = await res.json();
-    if (data.success) {
-      const url = data.data.url;
+
+    if (data.status_code === 200) {
+      const url = data.image.url;
       status.innerHTML = `Up thành công! <a href="${url}" target="_blank" style="color:#00ff88;text-decoration:underline;">Xem ảnh lớn</a>`;
       addToGallery(url, file.name);
     } else {
-      status.textContent = "Lỗi up ảnh (key die rồi?), liên hệ tao fix!";
+      status.textContent = "Lỗi up ảnh, thử lại nha!";
       status.style.color = "#ff3366";
     }
   } catch (err) {
-    status.textContent = "Lỗi mạng hoặc key bị chặn!";
+    status.textContent = "Lỗi mạng rồi bro!";
     status.style.color = "#ff3366";
   }
   loading.style.display = "none";
 };
 
+// Thêm vào gallery + lưu localStorage
 function addToGallery(url, name) {
   const item = document.createElement('div');
   item.className = 'gallery-item';
   item.innerHTML = `<img src="${url}" alt="${name}" loading="lazy">`;
   gallery.prepend(item);
+
   let saved = JSON.parse(localStorage.getItem('khoa-gallery') || '[]');
   saved.push({url, name});
   localStorage.setItem('khoa-gallery', JSON.stringify(saved));
 }
 
+// Load lại ảnh cũ
 window.onload = () => {
   const saved = localStorage.getItem('khoa-gallery');
   if (saved) {
