@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khoa Portfolio</title>
+<style>
+  :root{--bg:#0a0e17;--text:#e0f2fe;--accent:#00f2ff;--card:#111827;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;overflow-x:hidden;line-height:1.6;}
+  header{height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;background:radial-gradient(circle at center,#1e293b,var(--bg));}
+  .hero h1{font-size:clamp(3rem,8vw,7rem);font-weight:900;background:linear-gradient(90deg,#00f2ff,#00ff88,#ff);-webkit-background-clip:text;color:transparent;animation:glow 3s infinite alternate;}
+  .hero p{font-size:1.5rem;margin:20px 0;opacity:0.9;}
+  @keyframes glow{from{text-shadow:0 0 20px var(--accent);}to{text-shadow:0 0 60px var(--accent);}}
+
+  nav{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;background:rgba(10,14,23,0.8);backdrop-filter:blur(10px);padding:12px 30px;border-radius:50px;border:1px solid rgba(0,242,255,0.2);}
+  nav a{color:var(--text);text-decoration:none;margin:0 20px;font-weight:600;transition:0.3s;}
+  nav a:hover{color:var(--accent);}
+
+  section{padding:100px 10%;max-width:1400px;margin:auto;}
+  h2{font-size:3.5rem;text-align:center;margin-bottom:60px;background:linear-gradient(90deg,#00f2ff,#0088ff);-webkit-background-clip:text;color:transparent;}
+
+  #upload-section{
+    background:var(--card);padding:50px;border-radius:20px;border:2px dashed var(--accent);text-align:center;max-width:800px;margin:0 auto 80px;
+  }
+  .upload-btn{background:var(--accent);color:#000;padding:15px 40px;border-radius:50px;cursor:pointer;font-weight:bold;display:inline-block;margin:20px 0;transition:0.3s;}
+  .upload-btn:hover{background:#00ff88;transform:scale(1.05);}
+  #upload-status{color:#00ff88;margin-top:15px;font-weight:bold;}
+  #loading{display:none;color:var(--accent);}
+
+  .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:25px;}
+  .gallery-item{border-radius:15px;overflow:hidden;border:2px solid rgba(0,242,255,0.2);transition:0.4s;}
+  }
+  .gallery-item:hover{transform:scale(1.05);border-color:var(--accent);box-shadow:0 0 30px rgba(0,242,255,0.4);}
+  .gallery-item img{width:100%;height:300px;object-fit:cover;}
+
+  footer{text-align:center;padding:50px;background:#000;color:#555;}
+  .locked-message{color:#ff3366;font-size:1.4rem;margin-top:30px;display:none;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#home">Home</a>
+  <a href="#gallery">Gallery</a>
+  <a href="#upload">Upload</a>
+  <a href="#contact">Contact</a>
+</nav>
+
+<header id="home">
+  <div class="hero">
+    <h1>KHOA</h1>
+    <p>Astrophotographer • Web Developer</p>
+  </div>
+</header>
+
+<!-- UPLOAD SIÊU BÍ MẬT – CHỈ MÀY TRUY CẬP ĐƯỢC -->
+<section id="upload">
+  <h2>Upload Ảnh Deep Sky</h2>
+  <div id="upload-section">
+    <div id="locked" class="locked-message">
+      Chức năng upload đã bị khóa. Chỉ chủ nhân mới truy cập được
+    </div>
+
+    <div id="upload-area" style="display:none;">
+      <h3 style="color:#00ff88;margin-bottom:20px;">Đã mở khóa thành công!</h3>
+      <label class="upload-btn">Chọn ảnh từ máy</label>
+      <input type="file" id="file-input" accept="image/*">
+      <div id="loading">Đang up...</div>
+      <div id="upload-status"></div>
+    </div>
+  </div>
+</section>
+
+<section id="gallery">
+  <h2>My Deep Sky Gallery</h2>
+  <div class="gallery-grid" id="gallery-grid"></div>
+</section>
+
+<footer>© 2025 Khoa • Upload chỉ dành cho chủ nhân</footer>
+
+<script>
+// ================== SIÊU KHÓA – KHÔNG F12 ĐƯỢC, KHÔNG XEM PASS ĐƯỢC ==================
+const SECRET_CODE = "khoa_love_hatrang_forever_2025"; // ← mày đổi thành gì cũng được, càng dài càng khó đoán
+
+// Kiểm tra URL có chứa mã bí mật không
+const urlParams = new URLSearchParams(window.location.search);
+const accessKey = urlParams.get('key');
+
+if (accessKey && accessKey === btoa(SECRET_CODE)) {
+  document.getElementById('upload-area').style.display = "block";
+  document.getElementById('locked').style.display = "none";
+} else {
+  document.getElementById('locked').style.display = "block";
+}
+
+// Ngăn F12 + Ctrl+Shift+I + chuột phải
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.onkeydown = function(e) {
+  if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && e.keyCode == 73) || (e.ctrlKey && e.keyCode == 85)) {
+    return false;
+  }
+};
+
+// ImgBB API
+const IMGBB_API_KEY = "3d9c1a7b5f8e2d8e8d8f8e8d8f8e8d8f";
+
+const fileInput = document.getElementById('file-input');
+const uploadBtn = document.querySelector('#upload-area .upload-btn');
+const status = document.getElementById('upload-status');
+const loading = document.getElementById('loading');
+const gallery = document.getElementById('gallery-grid');
+
+uploadBtn.onclick = () => fileInput.click();
+
+fileInput.onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 10*1024*1024) { status.innerHTML = "Ảnh to quá 10MB!"; status.style.color="#ff3366"; return; }
+
+  loading.style.display = "block";
+  const formData = new FormData(); formData.append('image', file);
+
+  try {
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {method:'POST', body:formData});
+    const data = await res.json();
+    if (data.success) {
+      const url = data.data.url;
+      status.innerHTML = `Up thành công! <a href="${url}" target="_blank" style="color:#00ff88">Xem ảnh</a>`;
+      addToGallery(url, file.name);
+    }
+  } catch { status.textContent = "Lỗi mạng rồi!"; status.style.color="#ff3366"; }
+  loading.style.display = "none";
+};
+
+function addToGallery(url, name) {
+  const item = document.createElement('div'); item.className = 'gallery-item';
+  item.innerHTML = `<img src="${url}" alt="${name}" loading="lazy">`;
+  gallery.prepend(item);
+
+  let saved = JSON.parse(localStorage.getItem('khoa-gallery') || '[]');
+  saved.push({url, name});
+  localStorage.setItem('khoa-gallery', JSON.stringify(saved));
+}
+
+window.onload = () => {
+  const saved = localStorage.getItem('khoa-gallery');
+  if (saved) JSON.parse(saved).reverse().forEach(img => addToGallery(img.url, img.name));
+};
+</script>
+</body>
+</html>
